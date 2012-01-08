@@ -165,6 +165,10 @@ class BaseQueue(object):
     def clear(self):
         """Removes all the elements in the queue"""
         self.redis.delete(self.key)
+    
+    def trim(self, length):
+        """Trims the queue to the provided length"""
+        self.redis.ltrim(self.key, 0, length-1)
 
 class Deque(BaseQueue):
     """Implements a double-ended queue"""
@@ -238,17 +242,17 @@ class PriorityQueue(BaseQueue):
     
     def dump(self, fobj):
         """Destructively dump the contents of the queue into fp"""
-        next = self.pop()
-        while next:
-            self.serializer.dump(next[0], fobj)
-            next = self.pop()
+        next = self.pop(withscores=True)
+        while next and next[0] != None:
+            self.serializer.dump(next, fobj)
+            next = self.pop(withscores=True)
     
     def load(self, fobj):
         """Load the contents of the provided fobj into the queue"""
         try:
             while True:
                 value, score = self.serializer.load(fobj)
-                self.redis.zadd(self.key, value, score)
+                self.redis.zadd(self.key, self.serializer.dumps(value), score)
         except Exception as e:
             return
     
@@ -268,7 +272,7 @@ class PriorityQueue(BaseQueue):
     
     def extend(self, vals):
         """Extends the elements in the queue."""
-        with self.redis.pipeline(transaction=False) as pipe:
+        with self.redis.pipeline() as pipe:
             for val, score in vals:
                 pipe.zadd(self.key, self._pack(val), score)
             return pipe.execute()
@@ -309,6 +313,10 @@ class PriorityQueue(BaseQueue):
     def push(self, value, score):
         '''Add an element with a given score'''
         return self.redis.zadd(self.key, self._pack(value), score)
+    
+    def trim(self, length):
+        """Trims the queue to the provided length"""
+        self.redis.zremrangebyrank(self.key, length, -1)
 
 class CappedCollection(BaseQueue):
     """
@@ -367,3 +375,4 @@ class Stack(BaseQueue):
             queue, popped = self.redis.blpop(self.key)
         log.debug('Popped ** %s ** from key ** %s **' % (popped, self.key))
         return self._unpack(popped)
+    

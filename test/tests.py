@@ -100,6 +100,15 @@ class Queue(unittest.TestCase):
             f.truncate()
             self.q.clear()
     
+    def test_trim(self):
+        """Test to make sure trim works as we'd expect"""
+        count = 100
+        self.q.extend(range(count))
+        self.q.trim(50)
+        self.assertEqual(len(self.q), 50)
+        self.assertTrue(self.q[0:-1], range(50))
+        self.q.clear()
+    
 class CappedCollection(unittest.TestCase):
     def setUp(self):
         r.delete('qrtestcc')
@@ -146,6 +155,17 @@ class CappedCollection(unittest.TestCase):
         count = 100
         self.aq.extend(i for i in range(count))
         self.assertEquals(len(self.aq), self.aq.size)
+        self.aq.clear()
+
+    def test_trim(self):
+        """Test to make sure trim works as we'd expect"""
+        count = 100
+        self.aq.extend(range(count))
+        self.aq.trim(50)
+        self.assertEqual(len(self.aq), 3)
+        self.aq.trim(2)
+        self.assertEqual(len(self.aq), 2)
+        self.assertTrue(self.aq[0:-1], range(2))
         self.aq.clear()
 
 class Stack(unittest.TestCase):
@@ -220,6 +240,17 @@ class Stack(unittest.TestCase):
             # Now clean up after myself
             f.truncate()
             self.stack.clear()
+    
+    def test_trim(self):
+        """Test to make sure trim works as we'd expect"""
+        count = 100
+        self.stack.extend(range(count))
+        self.stack.trim(50)
+        self.assertEqual(len(self.stack), 50)
+        test = range(50)
+        test.reverse()
+        self.assertTrue(self.stack[0:-1], test)
+        self.stack.clear()
 
 class PriorityQueue(unittest.TestCase):
     def setUp(self):
@@ -314,6 +345,15 @@ class PriorityQueue(unittest.TestCase):
             # Now clean up after myself
             f.truncate()
             self.q.clear()
+    
+    def test_trim(self):
+        """Test to make sure trim works as we'd expect"""
+        count = 100
+        self.q.extend(zip(range(count), range(count)))
+        self.q.trim(50)
+        self.assertEqual(len(self.q), 50)
+        self.assertTrue(self.q[0:-1], range(50))
+        self.q.clear()
 
 if __name__ == '__main__':
     unittest.main()
